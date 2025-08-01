@@ -1,28 +1,17 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import {jwtDecode} from 'jwt-decode';
-import { JwtPayload } from '../gymwear/src/app/model/interface';
-
-// export interface JwtPayload {
-//     role: string;
-//     email: string;
-//     firstname: string;
-//     lastname: string;
-//     createdAt: string;
-//     lastupdate: string;
-//     isActive: boolean;
-//     tokenCreatedAt: string;
-//     exp?: number;
-//     [key: string]: any;
-//   }
+import { jwtDecode } from 'jwt-decode';
+import { JwtPayload } from './app/model/interface';
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
-  const isPublic = ['/login', '/signup'].includes(path);
+
+  // ✅ UPDATED: Treat '/' as public
+  const isPublic = ['/', '/login', '/signup'].includes(path);
 
   const token = request.cookies.get("token")?.value || "";
   const refreshToken = request.cookies.get("refreshToken")?.value || "";
-//math.floor give you time in milisecond and /1000 convert it into second
+
   const now = Math.floor(Date.now() / 1000);
 
   try {
@@ -43,10 +32,7 @@ export async function middleware(request: NextRequest) {
     }
 
     const role = decoded.role;
-    //get the current time and /1000 to convert it into second
     const tokenCreatedAt = new Date(decoded.tokenCreatedAt).getTime() / 1000;
-
-    ///60 to convert it in to mintues
     const ageInMinutes = (now - tokenCreatedAt) / 60;
 
     if (ageInMinutes > 2) {
@@ -54,7 +40,7 @@ export async function middleware(request: NextRequest) {
 
       try {
         if (refreshToken) {
-          const res = await fetch(`${request.nextUrl.origin}/api/users/refresh`, {
+          const res = await fetch(`${request.nextUrl.origin}/api/auth/refresh`, {
             method: "GET",
             headers: { Cookie: `refreshToken=${refreshToken}` },
           });
@@ -67,7 +53,7 @@ export async function middleware(request: NextRequest) {
               secure: process.env.NODE_ENV === "production",
               sameSite: "strict",
               path: "/",
-              maxAge: 60 * 15, // 15 minutes
+              maxAge: 60 * 15,
             });
             return response;
           } else {
@@ -84,17 +70,31 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // ✅ UPDATED: Admin lands on '/' → redirect to /admin
+    if (path === "/" && role === "admin") {
+      console.log("Admin landed on root — redirecting to /admin");
+      return redirectToCorrectPage(role, request);
+    }
+if (path.startsWith("/user") && role !== "user") {
+  console.log("Admin trying to access user-only page");
+  return redirectToCorrectPage(role, request);
+}
+    // ✅ NEW: If user has token and role is 'user', allow access to '/'
+    if (path === "/" && role === "user") {
+      console.log("User landed on landing page — allow access");
+      return NextResponse.next();
+    }
+
+    // ✅ Prevent users from accessing admin
     if (path.startsWith("/admin") && role !== "admin") {
       console.log("Non-admin trying to access admin page");
       return redirectToCorrectPage(role, request);
     }
 
-    if (path.startsWith("/user") && role !== "user") {
-      console.log("Non-user trying to access user page");
-      return redirectToCorrectPage(role, request);
-    }
-
+    // ✅ If public route and already authenticated
     if (isPublic && token) {
+      // ✅ NEW: prevent login/signup access when already authenticated
+      console.log("Already logged in — redirect to correct role page");
       return redirectToCorrectPage(role, request);
     }
 
@@ -111,7 +111,6 @@ function redirectToLogin(request: NextRequest, reason: string) {
 
   const response = NextResponse.redirect(loginUrl);
 
-  // Only delete cookies when necessary (e.g., session expired)
   if (reason === "sessionExpired" || reason === "unauthorized") {
     response.cookies.delete("token");
     response.cookies.delete("refreshToken");
@@ -121,17 +120,26 @@ function redirectToLogin(request: NextRequest, reason: string) {
 }
 
 function redirectToCorrectPage(role: string, request: NextRequest) {
-  const redirectUrl = new URL(role === "admin" ? "/admin" : "/user", request.nextUrl.origin);
+  let redirectPath = "/";
+  if (role === "admin") {
+    redirectPath = "/admin";
+  } else if (role === "user") {
+    redirectPath = "/"; // ✅ stays on landing page
+  } else {
+    redirectPath = "/login";
+  }
+  const redirectUrl = new URL(redirectPath, request.nextUrl.origin);
   return NextResponse.redirect(redirectUrl);
 }
 
 export const config = {
   matcher: [
-    "/",
+    "/", // ✅ included in public
     "/login",
     "/signup",
     "/admin/:path*",
     "/user/:path*",
-    "/profile/:path*", 
+    "/profile/:path*",
+     "/user/:path*",
   ],
 };

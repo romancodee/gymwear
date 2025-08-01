@@ -22,10 +22,9 @@ export async function POST(request: NextRequest) {
     if (!user.isActive) {
       return Response.json({ error: "Account is inactive. Contact admin." }, { status: 403 });
     }
-   const role=user.role;
 
     const tokenData = {
-      id: user._id,
+    id: user._id.toString(),
       email: user.email,
       firstname:user.firstname,
       lastname:user.lasttname,
@@ -40,19 +39,20 @@ export async function POST(request: NextRequest) {
     
     const secret = process.env.Token_Secret_key;
     const refreshSecret = process.env.Refresh_Token_Secret;
+
     if (!secret || !refreshSecret) {
       throw new Error("Secret keys are missing in .env");
     }
 
     const token = jwt.sign(tokenData, secret, { expiresIn: "1d" });
-    const refreshToken=jwt.sign({id:user.id},refreshSecret,{expiresIn:"5d"})
+    const refreshToken=jwt.sign({ id: user._id.toString() },refreshSecret,{expiresIn:"5d"})
     const response = NextResponse.json({
       message: "Login successfully",
       success: true,
-      token,refreshToken,role
+      token,refreshToken
     });
+  
    
-
     
     response.cookies.set("token", token, {
       httpOnly: true,

@@ -1,23 +1,23 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const Product = require('../models/Product');
-const fs = require('fs');
+import mongoose from "mongoose";
+import product from "../model/product"
+import dummyprod from "../lib/dummyproduct"
+import dbconnect from "../lib/dbconnect"
 
-const seed = async () => {
+
+const products = [ /* Paste the 20 product objects here */ ];
+
+async function seedDB() {
   try {
-    await mongoose.connect(process.env.MONGODB_URI);
+    await dbconnect()
 
-    const data = JSON.parse(fs.readFileSync('gymshark-dummy-products.json', 'utf-8'));
+    await product.deleteMany(); // optional: clear existing data
+    await product.insertMany(dummyprod);
 
-    await Product.deleteMany();
-    await Product.insertMany(data);
-
-    console.log('✅ Products seeded successfully!');
-    process.exit();
+    console.log('✅ Seed data inserted successfully!');
+    mongoose.disconnect();
   } catch (error) {
-    console.error('❌ Seeding failed:', error);
-    process.exit(1);
+    console.error('❌ Error seeding data:', error);
   }
-};
+}
 
-seed();
+seedDB();

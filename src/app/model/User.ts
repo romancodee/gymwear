@@ -1,6 +1,23 @@
 import mongoose from "mongoose";
 
+const AddressSchema=new mongoose.Schema({
+  firstName: String,
+  lastName: String,
+  email : String,
+  phone: String,
+  address: String,
+  city: String,
+  zipCode: String,
+  country: String,
+  isDefault: { type: Boolean, default: false },
+
+},{ _id: true })
+
 const userSchema = new mongoose.Schema({
+   addresses: {
+    type: [AddressSchema],   // ✅ FIXED HERE
+    default: []              // ✅ Ensures it's never undefined
+  },
   firstname: {
     type: String,
     required: [true, "Please enter a first name"],
@@ -47,6 +64,7 @@ const userSchema = new mongoose.Schema({
     type:Boolean,
     default:true
   },
+ 
   forgetPasswordToken: String,
   forgetPasswordTokenExpires: Date,
   verifyToken: String,

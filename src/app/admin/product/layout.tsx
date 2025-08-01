@@ -15,13 +15,13 @@ const Page = ({children}:{children:React.ReactNode}) => {
           <div className="text-xl font-bold">Product Panel</div>
           <div className="space-x-4">
             <Link
-              href="/admin/product/addproduct"
+              href="/admin/product/addproduct/addp"
               className="hover:bg-white hover:text-black transition px-4 py-2 rounded"
             >
               Add Product
             </Link>
             <Link
-              href="/admin/product/edit"
+              href="/admin/product/editproduct"
               className="hover:bg-white hover:text-black transition px-4 py-2 rounded"
             >
               Edit Product

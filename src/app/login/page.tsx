@@ -8,6 +8,7 @@ import { useSearchParams } from "next/navigation";
 
 
 
+
 const Page: React.FC = () => {
   const [user, setUser] = useState({ email: "", password: "" });
   const [buttonDisabled, setButtonDisabled] = useState(true);
@@ -46,7 +47,7 @@ const Page: React.FC = () => {
       if (data.role === "admin") {
         router.push("/admin");
       } else {
-        router.push("/user");
+        router.push("/");
       }
     } catch (err: any) {
       const message = err.message || "Something went wrong";
